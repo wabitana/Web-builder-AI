@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import {
   Plus, Folder, Trash2, Clock, Zap, LogOut,
   Sun, Moon, Settings, Search, LayoutGrid, List,
-  ArrowRight, Sparkles, BarChart3, Globe
+  ArrowRight, Sparkles, BarChart3, Globe, Menu, X
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -78,83 +79,128 @@ export default function Dashboard() {
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const SidebarContent = () => (
+    <>
+      <div className="flex items-center gap-2 mb-10">
+        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <Zap className="text-white w-5 h-5 fill-current" />
+        </div>
+        <span className="text-xl font-black tracking-tighter">WABIAI</span>
+      </div>
+
+      <nav className="space-y-2 flex-1">
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold text-sm">
+          <Folder className="w-4 h-4" /> Projects
+        </button>
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
+          <BarChart3 className="w-4 h-4" /> Analytics
+        </button>
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
+          <Globe className="w-4 h-4" /> Deployments
+        </button>
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
+          <Settings className="w-4 h-4" /> Settings
+        </button>
+      </nav>
+
+      {/* Theme Toggle */}
+      <button
+        onClick={toggleTheme}
+        className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors mb-2"
+      >
+        {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        {isDark ? 'Light Mode' : 'Dark Mode'}
+      </button>
+
+      {/* User */}
+      <div className="border-t border-gray-200 dark:border-white/10 pt-4">
+        <div className="flex items-center gap-3 mb-3">
+          {user?.avatar ? (
+            <img src={user.avatar} alt="" className="w-9 h-9 rounded-full" />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600" />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate">{user?.name || 'Guest'}</p>
+            <p className="text-xs text-gray-500 truncate">{user?.email || 'Not signed in'}</p>
+          </div>
+        </div>
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 text-sm font-medium transition-colors"
+        >
+          <LogOut className="w-4 h-4" /> Sign Out
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white transition-colors duration-300">
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-white dark:bg-[#0A0A0A] border-r border-gray-200 dark:border-white/10 p-6 flex flex-col z-40 hidden lg:flex">
-        <div className="flex items-center gap-2 mb-10">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Zap className="text-white w-5 h-5 fill-current" />
-          </div>
-          <span className="text-xl font-black tracking-tighter">WABIAI</span>
-        </div>
+        <SidebarContent />
+      </aside>
 
-        <nav className="space-y-2 flex-1">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold text-sm">
-            <Folder className="w-4 h-4" /> Projects
-          </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
-            <BarChart3 className="w-4 h-4" /> Analytics
-          </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
-            <Globe className="w-4 h-4" /> Deployments
-          </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
-            <Settings className="w-4 h-4" /> Settings
-          </button>
-        </nav>
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {showMobileSidebar && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+              onClick={() => setShowMobileSidebar(false)}
+            />
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 h-full w-72 bg-white dark:bg-[#0A0A0A] border-r border-gray-200 dark:border-white/10 p-6 flex flex-col z-50 lg:hidden"
+            >
+              <button
+                onClick={() => setShowMobileSidebar(false)}
+                className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+              <SidebarContent />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors mb-2"
-        >
-          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          {isDark ? 'Light Mode' : 'Dark Mode'}
-        </button>
-
-        {/* User */}
-        <div className="border-t border-gray-200 dark:border-white/10 pt-4">
-          <div className="flex items-center gap-3 mb-3">
-            {user?.avatar ? (
-              <img src={user.avatar} alt="" className="w-9 h-9 rounded-full" />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600" />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{user?.name || 'Guest'}</p>
-              <p className="text-xs text-gray-500 truncate">{user?.email || 'Not signed in'}</p>
+      {/* Main Content */}
+      <main className="lg:ml-64 p-4 sm:p-6 lg:p-10">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+          <div className="flex items-center gap-3">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setShowMobileSidebar(true)}
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+                Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''} 👋
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm sm:text-base">Manage and build your projects</p>
             </div>
           </div>
           <button
-            onClick={logout}
-            className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 text-sm font-medium transition-colors"
-          >
-            <LogOut className="w-4 h-4" /> Sign Out
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="lg:ml-64 p-6 lg:p-10">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight">
-              Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''} 👋
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and build your projects</p>
-          </div>
-          <button
             onClick={() => setShowNewModal(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20 hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 sm:px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20 hover:scale-105 active:scale-95"
           >
             <Plus className="w-4 h-4" /> New Project
           </button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
           {[
             { label: 'Total Projects', value: projects.length, icon: Folder, color: 'blue' },
             { label: 'AI Generations', value: projects.length * 3, icon: Sparkles, color: 'purple' },
@@ -166,19 +212,19 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="bg-white dark:bg-[#0A0A0A] border border-gray-200 dark:border-white/10 rounded-2xl p-5"
+              className="bg-white dark:bg-[#0A0A0A] border border-gray-200 dark:border-white/10 rounded-2xl p-4 sm:p-5"
             >
               <div className="flex items-center justify-between mb-3">
                 <stat.icon className={`w-5 h-5 text-${stat.color}-500`} />
               </div>
-              <p className="text-2xl font-black">{stat.value}</p>
+              <p className="text-xl sm:text-2xl font-black">{stat.value}</p>
               <p className="text-xs text-gray-500 font-medium mt-1">{stat.label}</p>
             </motion.div>
           ))}
         </div>
 
         {/* Search + View Toggle */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -229,7 +275,7 @@ export default function Dashboard() {
             </button>
           </motion.div>
         ) : (
-          <div className={viewMode === 'grid' ? 'grid sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'}>
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'}>
             {filtered.map((project, i) => (
               <motion.div
                 key={project.id}
@@ -247,13 +293,13 @@ export default function Dashboard() {
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-sm group-hover:text-blue-600 transition-colors">{project.name}</h3>
+                  <div className="min-w-0 flex-1 mr-2">
+                    <h3 className="font-bold text-sm group-hover:text-blue-600 transition-colors truncate">{project.name}</h3>
                     <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {new Date(project.updatedAt).toLocaleDateString()}
+                      <Clock className="w-3 h-3 flex-shrink-0" /> {new Date(project.updatedAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       onClick={(e) => deleteProject(project.id, e)}
                       className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
@@ -271,11 +317,11 @@ export default function Dashboard() {
 
       {/* New Project Modal */}
       {showNewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl"
+            className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl"
           >
             <h2 className="text-2xl font-black mb-2">New Project</h2>
             <p className="text-gray-500 text-sm mb-6">Give your project a name to get started</p>
