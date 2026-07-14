@@ -8,6 +8,7 @@ import LogoCloud from '../components/LogoCloud';
 import StatsGrid from '../components/StatsGrid';
 import NeuralPulseMatrix from '../components/NeuralPulseMatrix';
 import CoreFeatures from '../components/CoreFeatures';
+import FeatureShowcase from '../components/FeatureShowcase';
 import WorkflowSteps from '../components/WorkflowSteps';
 import Testimonials from '../components/Testimonials';
 import PricingTable from '../components/PricingTable';
@@ -27,6 +28,7 @@ export default function LandingPage() {
       <StatsGrid />
       <NeuralPulseMatrix />
       <CoreFeatures />
+      <FeatureShowcase />
       <WorkflowSteps />
       <Testimonials />
       <PricingTable />
