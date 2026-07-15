@@ -2,9 +2,13 @@ import React from 'react';
 import AnnouncementBar from '../components/AnnouncementBar';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
+import TechStackMarquee from '../components/TechStackMarquee';
 import FluentHub from '../components/FluentHub';
 import ProtocolSection from '../components/ProtocolSection';
 import Interactive3DShowcase from '../components/Interactive3DShowcase';
+import CodePreview from '../components/CodePreview';
+import BentoGridFeatures from '../components/BentoGridFeatures';
+import ComparisonTable from '../components/ComparisonTable';
 import LogoCloud from '../components/LogoCloud';
 import StatsGrid from '../components/StatsGrid';
 import NeuralPulseMatrix from '../components/NeuralPulseMatrix';
@@ -25,9 +29,13 @@ export default function LandingPage() {
       <AnnouncementBar />
       <Navbar />
       <HeroSection />
+      <TechStackMarquee />
       <FluentHub />
       <ProtocolSection />
       <Interactive3DShowcase />
+      <BentoGridFeatures />
+      <CodePreview />
+      <ComparisonTable />
       <LogoCloud />
       <StatsGrid />
       <NeuralPulseMatrix />
