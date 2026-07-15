@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
+const chatRoutes = require('./routes/chat');
 const WebBuilderAgent = require('./agent/graph');
 
 dotenv.config();
@@ -35,6 +36,7 @@ app.use(passport.initialize());
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Wabiai API is running 🚀' });

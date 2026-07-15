@@ -10,11 +10,13 @@ import NeuralPulseMatrix from '../components/NeuralPulseMatrix';
 import CoreFeatures from '../components/CoreFeatures';
 import FeatureShowcase from '../components/FeatureShowcase';
 import WorkflowSteps from '../components/WorkflowSteps';
+import DynamicCTA from '../components/DynamicCTA';
 import Testimonials from '../components/Testimonials';
 import PricingTable from '../components/PricingTable';
 import FAQSection from '../components/FAQSection';
 import CTASection from '../components/CTASection';
 import Footer from '../components/Footer';
+import ChatbotWidget from '../components/ChatbotWidget';
 
 export default function LandingPage() {
   return (
@@ -30,11 +32,13 @@ export default function LandingPage() {
       <CoreFeatures />
       <FeatureShowcase />
       <WorkflowSteps />
+      <DynamicCTA />
       <Testimonials />
       <PricingTable />
       <FAQSection />
       <CTASection />
       <Footer />
+      <ChatbotWidget />
     </div>
   );
 }
