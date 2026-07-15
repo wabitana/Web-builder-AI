@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
 import FluentHub from '../components/FluentHub';
 import ProtocolSection from '../components/ProtocolSection';
+import Interactive3DShowcase from '../components/Interactive3DShowcase';
 import LogoCloud from '../components/LogoCloud';
 import StatsGrid from '../components/StatsGrid';
 import NeuralPulseMatrix from '../components/NeuralPulseMatrix';
@@ -26,6 +27,7 @@ export default function LandingPage() {
       <HeroSection />
       <FluentHub />
       <ProtocolSection />
+      <Interactive3DShowcase />
       <LogoCloud />
       <StatsGrid />
       <NeuralPulseMatrix />
