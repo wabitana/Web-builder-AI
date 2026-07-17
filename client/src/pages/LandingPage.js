@@ -25,7 +25,7 @@ import ChatbotWidget from '../components/ChatbotWidget';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-white font-sans selection:bg-slate-900 selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors duration-300">
       <AnnouncementBar />
       <Navbar />
       <HeroSection />
