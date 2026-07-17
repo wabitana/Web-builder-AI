@@ -8,7 +8,7 @@ import {
   Zap, Send, ArrowLeft, Sparkles, Monitor, Smartphone, Tablet,
   Download, Sun, Moon, Loader2, Code, Eye, RefreshCw, Copy,
   CheckCircle2, Palette, Mic, StopCircle, Undo2, Redo2, Save,
-  Terminal, FileCode, FileJson, FileText, FolderTree, MessageSquare, Menu, X, Wand2
+  Terminal, FileCode, FileJson, FileText, FolderTree, MessageSquare, Menu, X, Wand2, Globe
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -43,6 +43,8 @@ export default function Builder() {
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [deployUrl, setDeployUrl] = useState(null);
   const [currentStep, setCurrentStep] = useState('');
   
   const [viewMode, setViewMode] = useState('preview'); // preview or code
@@ -189,6 +191,34 @@ export default function Builder() {
     if (historyIndex < history.length - 1) {
       setHistoryIndex(historyIndex + 1);
       setFiles(history[historyIndex + 1]);
+    }
+  };
+
+  const handleDeploy = async () => {
+    if (!id || id === 'new') {
+      alert("Please save the project first before deploying.");
+      return;
+    }
+    setIsDeploying(true);
+    setDeployUrl(null);
+    try {
+      const res = await fetch(`${API_URL}/api/projects/${id}/deploy`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setDeployUrl(data.url);
+        // Add a success message to the chat
+        setMessages(prev => [...prev, { type: 'system', text: `🚀 Deployment started! View it live at: https://${data.url}` }]);
+      } else {
+        alert("Deployment failed: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error('Deploy error:', err);
+      alert("Failed to deploy project.");
+    } finally {
+      setIsDeploying(false);
     }
   };
 
@@ -586,8 +616,16 @@ ${hasBackend ? `### Backend\n1. \`cd server\`\n2. \`npm install\`\n3. \`npm star
           <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-gray-400">{isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>
           <button onClick={saveProject} className="hidden sm:block p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-gray-400"><Save className="w-4 h-4" /></button>
           
-          <button onClick={handleExport} className="flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-500 transition-colors">
+          <button onClick={handleExport} className="flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 text-xs font-bold transition-colors">
             <Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Export</span>
+          </button>
+          <button 
+            onClick={handleDeploy} 
+            disabled={isDeploying}
+            className="flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-500 transition-colors disabled:opacity-50"
+          >
+            {isDeploying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />} 
+            <span className="hidden sm:inline">{isDeploying ? 'Deploying...' : 'Deploy'}</span>
           </button>
         </div>
       </header>

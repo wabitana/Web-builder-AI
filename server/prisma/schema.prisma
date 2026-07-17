@@ -19,12 +19,37 @@ model User {
 }
 
 model Project {
+  id          String       @id @default(uuid())
+  name        String
+  files       Json?
+  messages    Json?
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  deployments Deployment[]
+  analytics   Analytics[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Deployment {
   id        String   @id @default(uuid())
-  name      String
-  files     Json?    // Multi-file structure (e.g., { "/App.js": { code: "..." } })
-  messages  Json?    // Array of chat messages
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch    String
+  status    String   // Ready, Building, Failed
+  url       String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Analytics {
+  id                 String   @id @default(uuid())
+  projectId          String
+  project            Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  views              Int      @default(0)
+  visitors           Int      @default(0)
+  avgSessionDuration Int      @default(0) // in seconds
+  bounceRate         Float    @default(0.0) // percentage 0-100
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }

@@ -6,7 +6,8 @@ import { useTheme } from '../context/ThemeContext';
 import {
   Plus, Folder, Trash2, Clock, Zap, LogOut,
   Sun, Moon, Settings, Search, LayoutGrid, List,
-  ArrowRight, Sparkles, BarChart3, Globe, Menu, X
+  ArrowRight, Sparkles, BarChart3, Globe, Menu, X,
+  Activity, Users, ArrowUpRight, TrendingUp, CheckCircle, AlertCircle, RefreshCw
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -22,10 +23,35 @@ export default function Dashboard() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [activeTab, setActiveTab] = useState('projects');
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [deployments, setDeployments] = useState([]);
+  const [deploymentsLoading, setDeploymentsLoading] = useState(false);
 
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'analytics' && !analyticsData) {
+      fetchAnalytics();
+    }
+    if (activeTab === 'deployments') {
+      if (deployments.length === 0) {
+        fetchDeployments();
+      }
+      
+      // Polling logic: if any deployment is 'Building', refresh every 5 seconds
+      const hasBuilding = deployments.some(d => d.status === 'Building');
+      if (hasBuilding) {
+        const interval = setInterval(() => {
+          fetchDeployments(true);
+        }, 5000);
+        return () => clearInterval(interval);
+      }
+    }
+  }, [activeTab, deployments]);
 
   const fetchProjects = async () => {
     try {
@@ -75,11 +101,66 @@ export default function Dashboard() {
     }
   };
 
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/projects/user/dashboard-stats`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setAnalyticsData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  const fetchDeployments = async (silent = false) => {
+    if (!silent) setDeploymentsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/projects/user/deployments`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setDeployments(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch deployments:', error);
+    } finally {
+      if (!silent) setDeploymentsLoading(false);
+    }
+  };
+
+  const timeAgo = (dateStr) => {
+    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
+  const formatDuration = (totalSeconds) => {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${m}m ${s}s`;
+  };
+
   const filtered = projects.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const SidebarContent = () => (
+  const SidebarContent = () => {
+    const tabs = [
+      { id: 'projects', label: 'Projects', icon: Folder },
+      { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+      { id: 'deployments', label: 'Deployments', icon: Globe },
+      { id: 'settings', label: 'Settings', icon: Settings },
+    ];
+
+    return (
     <>
       <div className="flex items-center gap-2 mb-10">
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -89,18 +170,19 @@ export default function Dashboard() {
       </div>
 
       <nav className="space-y-2 flex-1">
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold text-sm">
-          <Folder className="w-4 h-4" /> Projects
-        </button>
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
-          <BarChart3 className="w-4 h-4" /> Analytics
-        </button>
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
-          <Globe className="w-4 h-4" /> Deployments
-        </button>
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
-          <Settings className="w-4 h-4" /> Settings
-        </button>
+        {tabs.map(tab => (
+          <button 
+            key={tab.id}
+            onClick={() => { setActiveTab(tab.id); setShowMobileSidebar(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-colors ${
+              activeTab === tab.id 
+                ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold' 
+                : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400'
+            }`}
+          >
+            <tab.icon className="w-4 h-4" /> {tab.label}
+          </button>
+        ))}
       </nav>
 
       {/* Theme Toggle */}
@@ -133,7 +215,8 @@ export default function Dashboard() {
         </button>
       </div>
     </>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-white transition-colors duration-300">
@@ -174,23 +257,28 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="lg:ml-64 p-4 sm:p-6 lg:p-10">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
-          <div className="flex items-center gap-3">
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setShowMobileSidebar(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+        
+        {/* Mobile menu button & Header for non-projects tabs */}
+        <div className="flex items-center gap-3 mb-10 lg:hidden">
+          <button
+            onClick={() => setShowMobileSidebar(true)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+
+        {activeTab === 'projects' && (
+          <>
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+
             <div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
                 Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''} 👋
               </h1>
               <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm sm:text-base">Manage and build your projects</p>
             </div>
-          </div>
           <button
             onClick={() => setShowNewModal(true)}
             className="flex items-center gap-2 bg-blue-600 text-white px-5 sm:px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20 hover:scale-105 active:scale-95"
@@ -312,6 +400,189 @@ export default function Dashboard() {
               </motion.div>
             ))}
           </div>
+        )}
+          </>
+        )}
+
+        {activeTab === 'analytics' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black tracking-tight">Analytics Overview</h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Monitor your project performance and traffic</p>
+              </div>
+            </div>
+            
+            {analyticsLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : analyticsData ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Total Views', value: analyticsData.totalViews.toLocaleString(), icon: Users, colorClass: 'bg-blue-50 dark:bg-blue-500/10 text-blue-500' },
+                    { label: 'Active Visitors', value: analyticsData.totalVisitors.toLocaleString(), icon: Activity, colorClass: 'bg-green-50 dark:bg-green-500/10 text-green-500' },
+                    { label: 'Avg. Session', value: formatDuration(analyticsData.avgSessionDuration), icon: Clock, colorClass: 'bg-purple-50 dark:bg-purple-500/10 text-purple-500' },
+                    { label: 'Bounce Rate', value: `${analyticsData.avgBounceRate}%`, icon: TrendingUp, colorClass: 'bg-orange-50 dark:bg-orange-500/10 text-orange-500' },
+                  ].map((stat, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="bg-white dark:bg-[#0A0A0A] border border-gray-200 dark:border-white/10 rounded-2xl p-5 hover:shadow-lg transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.colorClass}`}>
+                          <stat.icon className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-black">{stat.value}</h3>
+                      <p className="text-sm text-gray-500 font-medium mt-1">{stat.label}</p>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {analyticsData.chartData && analyticsData.chartData.length > 0 && (
+                  <div className="bg-white dark:bg-[#0A0A0A] border border-gray-200 dark:border-white/10 rounded-2xl p-6 h-80 flex flex-col items-center justify-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-purple-500/5 opacity-50"></div>
+                    <div className="w-full h-full flex items-end justify-between gap-1 sm:gap-2 z-10 px-2 sm:px-4">
+                      {analyticsData.chartData.map((value, i) => {
+                        const maxVal = Math.max(...analyticsData.chartData);
+                        return (
+                          <motion.div
+                            key={i}
+                            initial={{ height: 0 }}
+                            animate={{ height: `${(value / maxVal) * 100}%` }}
+                            transition={{ delay: i * 0.05, duration: 0.5 }}
+                            className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-md opacity-80 group-hover:opacity-100 transition-opacity"
+                          ></motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-center">
+                <BarChart3 className="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" />
+                <p className="text-gray-500 text-sm">No analytics data available yet.</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === 'deployments' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-black tracking-tight">Deployments</h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Manage and track your project deployments</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => fetchDeployments()} className="flex items-center gap-2 bg-white dark:bg-[#0A0A0A] border border-gray-200 dark:border-white/10 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 dark:hover:bg-white/5 transition-all shadow-sm">
+                  <RefreshCw className={`w-4 h-4 ${deploymentsLoading ? 'animate-spin' : ''}`} /> Refresh
+                </button>
+                <button className="flex items-center gap-2 bg-white dark:bg-[#0A0A0A] border border-gray-200 dark:border-white/10 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 dark:hover:bg-white/5 transition-all shadow-sm">
+                  <Globe className="w-4 h-4" /> Custom Domains
+                </button>
+              </div>
+            </div>
+
+            {deploymentsLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : deployments.length > 0 ? (
+              <div className="bg-white dark:bg-[#0A0A0A] border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                <div className="divide-y divide-gray-200 dark:divide-white/10">
+                  {deployments.map((deploy, i) => (
+                    <div key={deploy.id || i} className="p-4 sm:p-5 hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center border border-gray-200 dark:border-white/10 shrink-0">
+                          {deploy.status === 'Ready' && <CheckCircle className="w-5 h-5 text-green-500" />}
+                          {deploy.status === 'Building' && <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
+                          {deploy.status === 'Failed' && <AlertCircle className="w-5 h-5 text-red-500" />}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-sm">{deploy.project}</h4>
+                            <span className="text-[10px] font-mono bg-gray-100 dark:bg-white/10 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-300">
+                              {deploy.branch}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                            <span className={
+                              deploy.status === 'Ready' ? 'text-green-600 dark:text-green-400' :
+                              deploy.status === 'Failed' ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'
+                            }>{deploy.status}</span>
+                            <span>•</span>
+                            <span>{timeAgo(deploy.time)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {deploy.url && (
+                        <a href={`https://${deploy.url}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-500 transition-colors bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-500/20">
+                          Visit <ArrowUpRight className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-center">
+                <Globe className="w-10 h-10 text-gray-300 dark:text-gray-600 mb-3" />
+                <p className="text-gray-500 text-sm">No deployments yet.</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === 'settings' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl space-y-6">
+            <div>
+              <h2 className="text-2xl font-black tracking-tight">Settings</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Manage your account preferences and configuration</p>
+            </div>
+
+            <div className="bg-white dark:bg-[#0A0A0A] border border-gray-200 dark:border-white/10 rounded-2xl p-6 space-y-6 shadow-sm">
+              <h3 className="text-lg font-bold border-b border-gray-100 dark:border-white/5 pb-4">Profile Information</h3>
+              <div className="flex items-center gap-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg border-4 border-white dark:border-[#0A0A0A]">
+                  {user?.name?.charAt(0) || 'U'}
+                </div>
+                <button className="px-4 py-2 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-semibold transition-colors">
+                  Change Avatar
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Full Name</label>
+                  <input type="text" defaultValue={user?.name || ''} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Email Address</label>
+                  <input type="email" defaultValue={user?.email || ''} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all" />
+                </div>
+              </div>
+              <button className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20 active:scale-95">
+                Save Changes
+              </button>
+            </div>
+
+            <div className="bg-white dark:bg-[#0A0A0A] border border-red-100 dark:border-red-500/20 rounded-2xl p-6 space-y-4 shadow-sm relative overflow-hidden">
+              <div className="absolute inset-0 bg-red-50 dark:bg-red-500/5 pointer-events-none"></div>
+              <div className="relative z-10">
+                <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">Danger Zone</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-5 max-w-lg">Once you delete your account, there is no going back. All your projects, deployments, and settings will be permanently erased.</p>
+                <button className="px-6 py-3 bg-red-500 text-white font-bold text-sm rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 active:scale-95">
+                  Delete Account
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </main>
 
