@@ -8,7 +8,7 @@ import {
   Zap, Send, ArrowLeft, Sparkles, Monitor, Smartphone, Tablet,
   Download, Sun, Moon, Loader2, Code, Eye, RefreshCw, Copy,
   CheckCircle2, Palette, Mic, StopCircle, Undo2, Redo2, Save,
-  Terminal, FileCode, FileJson, FileText, FolderTree, MessageSquare, Menu, X
+  Terminal, FileCode, FileJson, FileText, FolderTree, MessageSquare, Menu, X, Wand2
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -42,6 +42,7 @@ export default function Builder() {
   const [historyIndex, setHistoryIndex] = useState(-1);
   
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const [currentStep, setCurrentStep] = useState('');
   
   const [viewMode, setViewMode] = useState('preview'); // preview or code
@@ -88,6 +89,15 @@ export default function Builder() {
       setIsGenerating(false);
       setCurrentStep('');
       setMessages((prev) => [...prev, { type: 'error', text: data.message }]);
+    });
+
+    s.on('enhance_result', (data) => {
+      setIsEnhancing(false);
+      if (data.enhancedPrompt) {
+        setPrompt(data.enhancedPrompt);
+      } else if (data.error) {
+        setMessages((prev) => [...prev, { type: 'error', text: data.error }]);
+      }
     });
 
     return () => s.disconnect();
@@ -160,6 +170,12 @@ export default function Builder() {
     const fullPrompt = `Design vibe: ${selectedVibe}. ${prompt}`;
     socket.emit('generate', { prompt: fullPrompt, currentFiles: files });
     setPrompt('');
+  };
+
+  const handleEnhance = () => {
+    if (!prompt.trim() || !socket) return;
+    setIsEnhancing(true);
+    socket.emit('enhance_prompt', { prompt });
   };
 
   const handleUndo = () => {
@@ -436,15 +452,26 @@ ${hasBackend ? `### Backend\n1. \`cd server\`\n2. \`npm install\`\n3. \`npm star
             }}
             placeholder="Message AI Builder..."
             rows={2}
-            className="w-full resize-none rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 pr-12"
+            className="w-full resize-none rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 pr-24"
           />
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating || !prompt.trim()}
-            className="absolute right-2 bottom-2 p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </button>
+          <div className="absolute right-2 bottom-2 flex gap-1">
+            <button
+              onClick={handleEnhance}
+              disabled={isEnhancing || isGenerating || !prompt.trim()}
+              title="Enhance Prompt (AI)"
+              className="p-2 rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-400 dark:hover:bg-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isEnhancing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating || !prompt.trim()}
+              title="Send"
+              className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </div>
     </div>

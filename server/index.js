@@ -87,6 +87,24 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('enhance_prompt', async (data) => {
+    const { prompt } = data;
+    if (!process.env.OPENROUTER_API_KEY) {
+      socket.emit('enhance_result', { error: 'OpenRouter API key is not configured.' });
+      return;
+    }
+
+    try {
+      const PromptEngineer = require('./agent/agents/PromptEngineer');
+      const engineer = new PromptEngineer(process.env.OPENROUTER_API_KEY);
+      const enhancedPrompt = await engineer.execute({ rawPrompt: prompt });
+      socket.emit('enhance_result', { enhancedPrompt });
+    } catch (error) {
+      console.error('PromptEngineer error:', error);
+      socket.emit('enhance_result', { error: error.message });
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('🔌 Client disconnected:', socket.id);
   });
